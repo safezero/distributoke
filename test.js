@@ -95,7 +95,7 @@ describe('thanks', () => {
   it(`make ${receiversCount} gifts`, () => {
     return waterfall(receivers.map((receiver, index) => {
       return () => {
-        return thanks.broadcast('gift(bytes32,bytes32,bytes4,address,uint256,bytes32)', [
+        return thanks.broadcast('gift(bytes16,bytes16,bytes4,address,uint256,bytes32)', [
           twofas[index].secret, twofas[index + 1].hashedSecret, twofas[index + 1].checksum,
           receiver.address, values[index], memos[index]
         ], {
@@ -133,7 +133,7 @@ describe('thanks', () => {
   it(`make ${receiversCount} more gifts`, () => {
     return waterfall(receivers.map((receiver, index) => {
       return () => {
-        return thanks.broadcast('gift(bytes32,bytes32,bytes4,address,uint256,bytes32)', [
+        return thanks.broadcast('gift(bytes16,bytes16,bytes4,address,uint256,bytes32)', [
           twofas[index + receiversCount].secret, twofas[index + receiversCount + 1].hashedSecret, twofas[index + receiversCount + 1].checksum,
           receiver.address, values[index], memos[index]
         ], {

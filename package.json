@@ -21,7 +21,7 @@
     "chai": "^3.5.0",
     "chai-amorph": "0.0.4",
     "chai-as-promised": "^6.0.0",
-    "eth-twofa": "^0.1.0",
+    "eth-twofa": "^1.0.0",
     "ethereumjs-testrpc": "^3.0.3",
     "fs": "0.0.1-security",
     "keccak256-amorph": "0.0.1",
@@ -32,5 +32,8 @@
     "random-amorph": "0.0.1",
     "solc": "^0.4.10",
     "ultralightbeam": "^0.16.4"
+  },
+  "dependencies": {
+    "eth-twofa": "^1.0.0"
   }
 }

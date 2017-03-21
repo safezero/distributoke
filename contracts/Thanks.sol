@@ -15,7 +15,7 @@ contract Thanks is HumanStandardToken, Twofa {
     }
     Gift[] public gifts;
 
-    function Thanks(bytes32 _hashedSecret, bytes4 checksum) Twofa(_hashedSecret, checksum){
+    function Thanks(bytes16 _hashedSecret, bytes4 checksum) Twofa(_hashedSecret, checksum){
       owner = msg.sender;
       name = "THANKS";
       symbol = "THANKS";
@@ -29,8 +29,8 @@ contract Thanks is HumanStandardToken, Twofa {
     }
 
     function gift(
-        bytes32 secret,
-        bytes32 _hashedSecret,
+        bytes16 secret,
+        bytes16 _hashedSecret,
         bytes4 checksum,
         address _receiver,
         uint256 _value,
@@ -42,11 +42,11 @@ contract Thanks is HumanStandardToken, Twofa {
     }
 
     function setOwner(
-        bytes32 secret,
-        bytes32 _hashedSecret,
+        bytes16 secret,
+        bytes16 _hashedSecret,
         bytes4 checksum,
         address _owner
-    ) onlyowner() twofa(secret, _hashedSecret, checksum) {
+    ) onlyowner() twofa(secret, _hashedSecret, checksum){
         owner = _owner;
     }
 
