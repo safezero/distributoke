@@ -37,7 +37,7 @@ const ultralightbeam = new Ultralightbeam(provider, {})
 const initialSupply = new Amorph(0, 'number')
 const name = new Amorph('THANKS', 'ascii')
 const decimals = new Amorph(0, 'number')
-const symbol = new Amorph('THANKS', 'ascii')
+const symbol = new Amorph('THANKS description', 'ascii')
 
 const receiversCount = 5
 const receivers = _.range(receiversCount).map(() => { return Account.generate() })
@@ -65,6 +65,8 @@ describe('thanks', () => {
   it('should deploy', () => {
     const transactionRequest = new SolDeployTransactionRequest(
       thanksInfo.code, thanksInfo.abi, [
+        name,
+        symbol,
         twofas[0].hashedSecret,
         twofas[0].checksum
       ], {

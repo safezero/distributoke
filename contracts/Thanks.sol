@@ -15,10 +15,10 @@ contract Thanks is HumanStandardToken, Twofa {
     }
     Gift[] public gifts;
 
-    function Thanks(bytes16 _hashedSecret, bytes4 checksum) Twofa(_hashedSecret, checksum){
+    function Thanks(string _name, string _symbol, bytes16 _hashedSecret, bytes4 checksum) Twofa(_hashedSecret, checksum){
       owner = msg.sender;
-      name = "THANKS";
-      symbol = "THANKS";
+      name = _name;
+      symbol = _symbol;
     }
 
     modifier onlyowner() {
