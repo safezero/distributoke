@@ -56,7 +56,7 @@ commander
         gasCostHook: (gasCost) => {
           return inquirer.prompt([{
             name: 'continue',
-            message: `That will cost ${gasCost.to('bignumber').toFixed(5)} ETH. Continue? (y/n)`
+            message: `That will cost ${gasCost.to('bignumber').div('1000000000000000000').toFixed(5)} ETH. Continue? (y/n)`
           }]).then((answers) => {
             if (answers.continue !== 'y' && answers.continue !== 'yes') {
               throw new Error('Transaction cancelled')
@@ -182,7 +182,7 @@ function distribute(ultralightbeam, form) {
               message: `5.${index + 1}.1 Enter the receiver's address in hex:`,
               validate: (receiver) => {
                 if(memo.replace('0x', '').length !== 40) {
-                  return 'Receiver must be 20 characters'
+                  return 'Receiver must be 40 characters'
                 } else {
                   return true
                 }
