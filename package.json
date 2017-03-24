@@ -2,9 +2,11 @@
   "name": "distributoken",
   "version": "4.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
     "test": "mocha test.js -t 20000 -b"
+  },
+  "bin": {
+    "distributoken": "bin/index.js"
   },
   "repository": {
     "type": "git",
