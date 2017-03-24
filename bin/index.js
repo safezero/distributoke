@@ -179,15 +179,36 @@ function distribute(ultralightbeam, form) {
           return inquirer.prompt([
             {
               name: `receiver`,
-              message: `5.${index + 1}.1 Enter the receiver's address in hex:`
+              message: `5.${index + 1}.1 Enter the receiver's address in hex:`,
+              validate: (receiver) => {
+                if(memo.replace('0x', '').length !== 20) {
+                  return 'Receiver must be 20 characters'
+                } else {
+                  return true
+                }
+              }
             },
             {
               name: `value`,
-              message: `5.${index + 1}.2 Enter the value of the distribute as an integer:`
+              message: `5.${index + 1}.2 Enter the value of the distribute as an integer:`,
+              validate: (value) => {
+                if(isNaN(parseInt(value))) {
+                  return 'Value must be an integer'
+                } else {
+                  return true
+                }
+              }
             },
             {
               name: `memo`,
-              message: `5.${index + 1}.3 Enter a memo in ascii`
+              message: `5.${index + 1}.3 Enter a memo in ascii`,
+              validate: (memo) => {
+                if(memo.length > 32) {
+                  return 'Memo must be less than 32 characters long'
+                } else {
+                  return true
+                }
+              }
             }
           ]).then((answers) => {
             receivers.push(new Amorph(answers.receiver.replace('0x', ''), 'hex'))
