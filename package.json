@@ -1,6 +1,6 @@
 {
   "name": "distributoken",
-  "version": "4.0.7",
+  "version": "4.0.8",
   "description": "",
   "scripts": {
     "test": "mocha test.js -t 20000 -b"
