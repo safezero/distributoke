@@ -181,7 +181,7 @@ function distribute(ultralightbeam, form) {
               name: `receiver`,
               message: `5.${index + 1}.1 Enter the receiver's address in hex:`,
               validate: (receiver) => {
-                if(memo.replace('0x', '').length !== 40) {
+                if(receiver.replace('0x', '').length !== 40) {
                   return 'Receiver must be 40 characters'
                 } else {
                   return true
