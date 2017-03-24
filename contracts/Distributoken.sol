@@ -3,7 +3,7 @@ pragma solidity ^0.4.4;
 import "HumanStandardToken.sol";
 import "Twofa.sol"; //github.com/safezero/eth-twofa
 
-contract Thanks is HumanStandardToken, Twofa {
+contract Distributoken is HumanStandardToken, Twofa {
 
     address public owner;
 
@@ -15,7 +15,7 @@ contract Thanks is HumanStandardToken, Twofa {
     }
     Gift[] public gifts;
 
-    function Thanks(string _name, string _symbol, bytes16 _hashedSecret, bytes4 checksum) Twofa(_hashedSecret, checksum){
+    function Distributoken(string _name, string _symbol, bytes16 _hashedSecret, bytes4 checksum) Twofa(_hashedSecret, checksum){
       owner = msg.sender;
       name = _name;
       symbol = _symbol;
@@ -28,6 +28,12 @@ contract Thanks is HumanStandardToken, Twofa {
       _;
     }
 
+    function _gift (address _receiver, uint256 _value, bytes32 _memo) internal {
+      gifts[gifts.length++] = Gift(now, _receiver, _value, _memo);
+      balances[_receiver] += _value;
+      totalSupply += _value;
+    }
+
     function gift(
         bytes16 secret,
         bytes16 _hashedSecret,
@@ -36,9 +42,20 @@ contract Thanks is HumanStandardToken, Twofa {
         uint256 _value,
         bytes32 _memo
     ) onlyowner() twofa(secret, _hashedSecret, checksum) {
-        gifts[gifts.length++] = Gift(now, _receiver, _value, _memo);
-        balances[_receiver] += _value;
-        totalSupply += _value;
+      _gift(_receiver, _value, _memo);
+    }
+
+    function gift(
+        bytes16 secret,
+        bytes16 _hashedSecret,
+        bytes4 checksum,
+        address[] receivers,
+        uint256[] values,
+        bytes32[] memos
+    ) onlyowner() twofa(secret, _hashedSecret, checksum) {
+      for (uint i = 0; i < receivers.length; i++) {
+        _gift(receivers[i], values[i], memos[i]);
+      }
     }
 
     function setOwner(

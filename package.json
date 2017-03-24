@@ -1,5 +1,5 @@
 {
-  "name": "thanks-erc20",
+  "name": "distributoken",
   "version": "2.0.0",
   "description": "",
   "main": "index.js",
@@ -8,20 +8,19 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+ssh://git@github.com/safezero/thanks.git"
+    "url": "git+ssh://git@github.com/safezero/distributoken.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/safezero/thanks/issues"
+    "url": "https://github.com/safezero/distributoken/issues"
   },
-  "homepage": "https://github.com/safezero/thanks#readme",
+  "homepage": "https://github.com/safezero/distributoken#readme",
   "devDependencies": {
     "amorph-parse-solc-output": "^0.1.0",
     "chai": "^3.5.0",
     "chai-amorph": "0.0.4",
     "chai-as-promised": "^6.0.0",
-    "eth-twofa": "^1.0.0",
     "ethereumjs-testrpc": "^3.0.3",
     "fs": "0.0.1-security",
     "keccak256-amorph": "0.0.1",
@@ -30,10 +29,22 @@
     "promise-waterfall": "^0.1.0",
     "q": "^1.4.1",
     "random-amorph": "0.0.1",
-    "solc": "^0.4.10",
-    "ultralightbeam": "^0.16.4"
+    "solc": "^0.4.10"
   },
   "dependencies": {
-    "eth-twofa": "^1.0.0"
+    "amorph-base2048": "0.0.1",
+    "amorph-hex": "^1.0.2",
+    "amorph-parse-solc-output": "^0.1.0",
+    "commander": "^2.9.0",
+    "eth-twofa": "^1.0.0",
+    "ethereumjs-wallet": "^0.6.0",
+    "inquirer": "^3.0.6",
+    "keccak256-amorph": "0.0.1",
+    "lodash": "^4.17.4",
+    "password-prompt": "^1.0.2",
+    "promise-waterfall": "^0.1.0",
+    "solc": "^0.4.10",
+    "ultralightbeam": "^0.18.4",
+    "web3": "^0.16.0"
   }
 }
