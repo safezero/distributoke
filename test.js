@@ -73,10 +73,10 @@ describe('distributoken', () => {
     ])
   })
 
-  it(`make ${receiversCount} gifts`, () => {
+  it(`make ${receiversCount} distributions`, () => {
     return waterfall(receivers.map((receiver, index) => {
       return () => {
-        return distributoken.broadcast('gift(bytes16,bytes16,bytes4,address,uint256,bytes32)', [
+        return distributoken.broadcast('distribute(bytes16,bytes16,bytes4,address,uint256,bytes32)', [
           twofas[index].secret, twofas[index + 1].hashedSecret, twofas[index + 1].checksum,
           receiver.address, values[index], memos[index]
         ]).getConfirmation()
@@ -88,19 +88,19 @@ describe('distributoken', () => {
     return distributoken.fetch('hashedSecret()').should.eventually.amorphEqual(twofas[receiversCount].hashedSecret)
   })
 
-  it(`all ${receiversCount} gifts should have correct values`, () => {
+  it(`all ${receiversCount} distributions should have correct values`, () => {
     return Q.all(receivers.map((receiver, index) => {
-      return distributoken.fetch('gifts(uint256)', [new Amorph(index, 'number')]).then((gift) => {
-        gift.timestamp.should.amorphTo('number').be.gt(0)
-        gift.receiever.should.amorphEqual(receiver.address)
-        gift.value.should.amorphEqual(values[index])
-        gift.memo.should.amorphEqual(memos[index])
+      return distributoken.fetch('distributions(uint256)', [new Amorph(index, 'number')]).then((distribution) => {
+        distribution.timestamp.should.amorphTo('number').be.gt(0)
+        distribution.receiever.should.amorphEqual(receiver.address)
+        distribution.value.should.amorphEqual(values[index])
+        distribution.memo.should.amorphEqual(memos[index])
       })
     }))
   })
 
-  it('fetching the 5th gift should be rejected', () => {
-    return distributoken.fetch('gifts(uint256)', [new Amorph(5, 'number')]).should.be.rejectedWith(Error)
+  it('fetching the 5th distribution should be rejected', () => {
+    return distributoken.fetch('distributions(uint256)', [new Amorph(5, 'number')]).should.be.rejectedWith(Error)
   })
 
   it(`all ${receiversCount} receivers should have correct balance`, () => {
@@ -109,8 +109,8 @@ describe('distributoken', () => {
     }))
   })
 
-  it(`make ${receiversCount} more gifts (as a single transaction)`, () => {
-    return distributoken.broadcast('gift(bytes16,bytes16,bytes4,address[],uint256[],bytes32[])', [
+  it(`make ${receiversCount} more distributions (as a single transaction)`, () => {
+    return distributoken.broadcast('distribute(bytes16,bytes16,bytes4,address[],uint256[],bytes32[])', [
       twofas[receiversCount].secret, twofas[receiversCount + 1].hashedSecret, twofas[receiversCount + 1].checksum,
       _.map(receivers, 'address'), values, memos
     ]).getConfirmation()
@@ -120,19 +120,19 @@ describe('distributoken', () => {
     return distributoken.fetch('hashedSecret()').should.eventually.amorphEqual(twofas[receiversCount + 1].hashedSecret)
   })
 
-  it(`all ${receiversCount} gifts should have correct values`, () => {
+  it(`all ${receiversCount} distributions should have correct values`, () => {
     return Q.all(receivers.map((receiver, index) => {
-      return distributoken.fetch('gifts(uint256)', [new Amorph(index + receiversCount, 'number')]).then((gift) => {
-        gift.timestamp.should.amorphTo('number').be.gt(0)
-        gift.receiever.should.amorphEqual(receiver.address)
-        gift.value.should.amorphEqual(values[index])
-        gift.memo.should.amorphEqual(memos[index])
+      return distributoken.fetch('distributions(uint256)', [new Amorph(index + receiversCount, 'number')]).then((distribution) => {
+        distribution.timestamp.should.amorphTo('number').be.gt(0)
+        distribution.receiever.should.amorphEqual(receiver.address)
+        distribution.value.should.amorphEqual(values[index])
+        distribution.memo.should.amorphEqual(memos[index])
       })
     }))
   })
 
-  it('fetching the 20th gift should be rejected', () => {
-    return distributoken.fetch('gifts(uint256)', [new Amorph(20, 'number')]).should.be.rejectedWith(Error)
+  it('fetching the 20th distribution should be rejected', () => {
+    return distributoken.fetch('distributions(uint256)', [new Amorph(20, 'number')]).should.be.rejectedWith(Error)
   })
 
   it(`all ${receiversCount} receivers should have correct balance`, () => {

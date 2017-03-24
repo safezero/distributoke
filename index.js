@@ -80,12 +80,12 @@ function showMenu(ultralightbeam, form) {
     message: 'Choose an action:',
     choices: [
       { name: 'Deploy a new distributoken contract', value: 'deploy'},
-      { name: 'Gift on an existing contract', value: 'gift'},
+      { name: 'Distribute on an existing contract', value: 'distribute'},
     ]
   }]).then((answers) => {
     switch(answers.action) {
       case 'deploy': return deploy(ultralightbeam, form); break;
-      case 'gift': return gift(ultralightbeam, form); break;
+      case 'distribute': return distribute(ultralightbeam, form); break;
     }
   }).catch((err) => {
     logRed(err.message)
@@ -134,13 +134,13 @@ function deploy(ultralightbeam, form) {
   })
 }
 
-function gift(ultralightbeam, form) {
+function distribute(ultralightbeam, form) {
   const questions = [
     { name: 'contractAddress', message: '1. Enter token address in hex:' },
     { name: 'secret', message: `2. Enter the current secret in ${form}:` },
     { name: 'hashedSecret', message: `3. Enter a new hashed secret in ${form}:` },
     { name: 'checksum', message: `4. Enter the checksum in ${form}:` },
-    { name: 'count', message: '5. Enter the number of gifts you would like to make:' },
+    { name: 'count', message: '5. Enter the number of distributes you would like to make:' },
   ]
   return inquirer.prompt(questions).then(function (answers) {
     const contractAddress = new Amorph(answers.contractAddress.replace('0x', ''), 'hex')
@@ -151,7 +151,7 @@ function gift(ultralightbeam, form) {
     const distributoken = new SolWrapper(ultralightbeam, distributokenInfo.abi, contractAddress)
 
     if (count === 0 || isNaN(count)) {
-      throw new Error('Gifts count must be integer')
+      throw new Error('Distributions count must be integer')
     }
 
     if (!keccak256(hashedSecret).as('array', (array) => {
@@ -182,7 +182,7 @@ function gift(ultralightbeam, form) {
             },
             {
               name: `value`,
-              message: `5.${index + 1}.2 Enter the value of the gift as an integer:`
+              message: `5.${index + 1}.2 Enter the value of the distribute as an integer:`
             },
             {
               name: `memo`,
@@ -196,14 +196,14 @@ function gift(ultralightbeam, form) {
         }
       })
       return waterfall(inquiryWrappers).then(() => {
-        const transactionMonitor = distributoken.broadcast('gift(bytes16,bytes16,bytes4,address[],uint256[],bytes32[])', [
+        const transactionMonitor = distributoken.broadcast('distribute(bytes16,bytes16,bytes4,address[],uint256[],bytes32[])', [
           secret, hashedSecret, checksum, receivers, values, memos
         ])
         return transactionMonitor.getTransactionHash().then((transactionHash) => {
           return monitorTransactionHash(transactionHash)
         }).then((interval) => {
           return transactionMonitor.getConfirmation().then(() => {
-            logGreen(`Completed ${count} gifts`)
+            logGreen(`Completed ${count} distributes`)
           }).finally(() => {
             clearInterval(interval)
             return showMenu(ultralightbeam, form)

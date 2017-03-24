@@ -7,13 +7,13 @@ contract Distributoken is HumanStandardToken, Twofa {
 
     address public owner;
 
-    struct Gift {
+    struct Distribution {
         uint256 timestamp;
         address receiever;
         uint256 value;
         bytes32 memo;
     }
-    Gift[] public gifts;
+    Distribution[] public distributions;
 
     function Distributoken(string _name, string _symbol, bytes16 _hashedSecret, bytes4 checksum) Twofa(_hashedSecret, checksum){
       owner = msg.sender;
@@ -28,13 +28,13 @@ contract Distributoken is HumanStandardToken, Twofa {
       _;
     }
 
-    function _gift (address _receiver, uint256 _value, bytes32 _memo) internal {
-      gifts[gifts.length++] = Gift(now, _receiver, _value, _memo);
+    function _distribute (address _receiver, uint256 _value, bytes32 _memo) internal {
+      distributions[distributions.length++] = Distribution(now, _receiver, _value, _memo);
       balances[_receiver] += _value;
       totalSupply += _value;
     }
 
-    function gift(
+    function distribute(
         bytes16 secret,
         bytes16 _hashedSecret,
         bytes4 checksum,
@@ -42,10 +42,10 @@ contract Distributoken is HumanStandardToken, Twofa {
         uint256 _value,
         bytes32 _memo
     ) onlyowner() twofa(secret, _hashedSecret, checksum) {
-      _gift(_receiver, _value, _memo);
+      _distribute(_receiver, _value, _memo);
     }
 
-    function gift(
+    function distribute(
         bytes16 secret,
         bytes16 _hashedSecret,
         bytes4 checksum,
@@ -54,7 +54,7 @@ contract Distributoken is HumanStandardToken, Twofa {
         bytes32[] memos
     ) onlyowner() twofa(secret, _hashedSecret, checksum) {
       for (uint i = 0; i < receivers.length; i++) {
-        _gift(receivers[i], values[i], memos[i]);
+        _distribute(receivers[i], values[i], memos[i]);
       }
     }
 
