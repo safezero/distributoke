@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 
 const colors = require('colors')
+
+logGreen('Starting distributoken cli. This may take a minute.')
+
 const commander = require('commander')
 const Ultralightbeam = require('ultralightbeam')
 const Wallet = require('ethereumjs-wallet')
