@@ -167,7 +167,6 @@ function distribute(ultralightbeam, form) {
       if (keccak256(secret).as('array', (array) => { return array.slice(0, 16) }).equals(hashedSecret)) {
         logGreen('Secret is correct')
       } else {
-        console.log(keccak256(secret).to(form))
         throw new Error(`Secret does not match current hashed secret: ${hashedSecret.to(form)}`)
       }
     }).then(() => {
