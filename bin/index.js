@@ -1,13 +1,14 @@
+#!/usr/bin/env node
+
 const colors = require('colors')
 const commander = require('commander')
 const Ultralightbeam = require('ultralightbeam')
 const Wallet = require('ethereumjs-wallet')
 const fs = require('fs')
-const prompt = require('password-prompt')
 const Account = require('ethereum-account-amorph')
 const Amorph = require('amorph')
 const HttpProvider = require('web3/lib/web3/HttpProvider')
-const distributokenInfo = require('./lib/info')
+const distributokenInfo = require('../lib/info')
 const inquirer = require('inquirer')
 const amorphBase2048Plugin = require('amorph-base2048')
 const amorphHexPlugin = require('amorph-hex')
@@ -16,6 +17,7 @@ const SolDeployTransactionRequest = require('ultralightbeam/lib/SolDeployTransac
 const keccak256 = require('keccak256-amorph')
 const _ = require('lodash')
 const waterfall = require('promise-waterfall')
+const passwordPrompt = require('muted-password-prompt')
 
 Amorph.loadPlugin(amorphBase2048Plugin)
 Amorph.loadPlugin(amorphHexPlugin)
@@ -43,7 +45,7 @@ commander
       logRed(`Could not open walletpath "${walletpath}"`)
       process.exit()
     }
-    prompt('Please enter your passphrase: ', { method: 'hide' }).then((password) => {
+    return passwordPrompt('Please enter your UTC passphrase: ', { method: 'hide' }).then((password) => {
       let wallet = Wallet.fromV3(walletfile, password, true)
       logGreen(`Account ${wallet.getAddress().toString('hex')} unlocked`)
       const account = new Account(new Amorph(wallet.getPrivateKey(), 'buffer'))
