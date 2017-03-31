@@ -203,6 +203,41 @@ describe('distributoken', () => {
     return distributoken.fetch('owner()', []).should.eventually.amorphEqual(newOwner.address)
   })
 
+  it(`should sunset`, () => {
+    return distributoken.broadcast('setSunset(bytes16,bytes16,bytes4,uint256)', [
+      twofas[receiversCount + 2].secret, twofas[receiversCount + 3].hashedSecret, twofas[receiversCount + 3].checksum,
+      new Amorph(1, 'number')
+    ], {
+      from: newOwner
+    }).getConfirmation()
+  })
+
+  it(`should have updated sunset`, () => {
+    return distributoken.fetch('sunset()', []).should.eventually.amorphEqual(new Amorph(1, 'number'))
+  })
+
+  it('should not be able to transfer', () => {
+    return distributoken.broadcast('transfer(address,uint256)', [
+      receivers[1].address, values[0]
+    ], {
+      from: receivers[0]
+    }).getConfirmation().should.be.rejectedWith(Error)
+  })
+
+  it(`should un-sunset`, () => {
+    return distributoken.broadcast('setSunset(bytes16,bytes16,bytes4,uint256)', [
+      twofas[receiversCount + 3].secret, twofas[receiversCount + 4].hashedSecret, twofas[receiversCount + 4].checksum,
+      new Amorph(0, 'number')
+    ], {
+      from: newOwner,
+      gas: ultralightbeam.blockPoller.block.gasLimit
+    }).getConfirmation()
+  })
+
+  it(`should have updated sunset`, () => {
+    return distributoken.fetch('sunset()', []).should.eventually.amorphEqual(new Amorph(0, 'number'))
+  })
+
   describe('StandardToken', () => {
     describe('transfer', () => {
       it('should fail when value > balance', () => {

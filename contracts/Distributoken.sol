@@ -2,8 +2,9 @@ pragma solidity ^0.4.4;
 
 import "HumanStandardToken.sol";
 import "Twofa.sol"; //github.com/safezero/eth-twofa
+import "Sunsets.sol";
 
-contract Distributoken is HumanStandardToken, Twofa {
+contract Distributoken is HumanStandardToken, Twofa, Sunsets {
 
     address public owner;
 
@@ -65,6 +66,23 @@ contract Distributoken is HumanStandardToken, Twofa {
         address _owner
     ) onlyowner() twofa(secret, _hashedSecret, checksum){
         owner = _owner;
+    }
+
+    function setSunset(
+        bytes16 secret,
+        bytes16 _hashedSecret,
+        bytes4 checksum,
+        uint256 _sunset
+    ) onlyowner() twofa(secret, _hashedSecret, checksum){
+        sunset = _sunset;
+    }
+
+    function transfer(address _to, uint256 _value) sunsets() returns (bool success){
+      return super.transfer(_to, _value);
+    }
+
+    function transferFrom(address _from, address _to, uint256 _value) sunsets() returns (bool success){
+      return super.transferFrom(_from, _to, _value);
     }
 
 }
