@@ -166,7 +166,7 @@ function distribute(ultralightbeam, form) {
     }
 
     console.log('Checking secret...')
-    return distributoken.fetch('hashedSecret()').then((hashedSecret) => {
+    return distributoken.fetch('hashedSecret()', []).then((hashedSecret) => {
       if (keccak256(secret).as('array', (array) => { return array.slice(0, 16) }).equals(hashedSecret)) {
         logGreen('Secret is correct')
       } else {
@@ -223,7 +223,7 @@ function distribute(ultralightbeam, form) {
       return waterfall(inquiryWrappers).then(() => {
         const transactionMonitor = distributoken.broadcast('distribute(bytes16,bytes16,bytes4,address[],uint256[],bytes32[])', [
           secret, hashedSecret, checksum, receivers, values, memos
-        ])
+        ], {})
         return transactionMonitor.getTransactionHash().then((transactionHash) => {
           return monitorTransactionHash(transactionHash)
         }).then((interval) => {

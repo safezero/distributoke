@@ -16,25 +16,13 @@ const keccak256 = require('keccak256-amorph')
 const waterfall = require('promise-waterfall')
 const Twofa = require('eth-twofa')
 const distributokenInfo = require('./lib/info')
+const OOGError = require('ultralightbeam/lib/errors/OOG')
 
 chai.use(chaiAmorph)
 chai.use(chaiAsPromised)
 chai.should()
 
 const account = Account.generate()
-const provider = TestRPC.provider({
-  gasLimit: 4000000,
-  blocktime: 2,
-  accounts: [{
-    balance: 1000000000000000000,
-    secretKey: account.privateKey.to('hex.prefixed')
-  }],
-  locked: false
-})
-
-const ultralightbeam = new Ultralightbeam(provider, {
-  defaultAccount: account
-})
 
 const initialSupply = new Amorph(0, 'number')
 const name = new Amorph('THANKS', 'ascii')
@@ -47,8 +35,33 @@ const values = _.range(receiversCount).map(() => { return random(1) })
 const memos = _.range(receiversCount).map(() => { return random(32) })
 const twofas = _.range(receiversCount * 2 + 1).map(() => { return Twofa.generate( )})
 
+const provider = TestRPC.provider({
+  gasLimit: 4000000,
+  blocktime: 2,
+  accounts: receivers.map((receiver) => {
+    return {
+      balance: 1000000000000000000,
+      secretKey: receiver.privateKey.to('hex.prefixed')
+    }
+  }).concat([{
+    balance: 1000000000000000000,
+    secretKey: account.privateKey.to('hex.prefixed')
+  }]),
+  locked: false
+})
+
+const ultralightbeam = new Ultralightbeam(provider, {
+  maxBlocksToWait: 10,
+  defaultAccount: account,
+  gasMultiplier: 1.5
+})
+
 describe('distributoken', () => {
   let distributoken
+
+  before((done) => {
+    setTimeout(done, 2000)
+  })
 
   it('should deploy', () => {
     return ultralightbeam.solDeploy(distributokenInfo.code, distributokenInfo.abi, [
@@ -56,7 +69,7 @@ describe('distributoken', () => {
       symbol,
       twofas[0].hashedSecret,
       twofas[0].checksum
-    ]).then((_distributoken) => {
+    ], {}).then((_distributoken) => {
       distributoken = _distributoken
     })
   })
@@ -69,7 +82,7 @@ describe('distributoken', () => {
       distributoken.fetch('decimals()', []).should.eventually.amorphEqual(decimals),
       distributoken.fetch('symbol()', []).should.eventually.amorphEqual(symbol),
       distributoken.fetch('balanceOf(address)', [account.address]).should.eventually.amorphEqual(initialSupply),
-      distributoken.fetch('hashedSecret()').should.eventually.amorphEqual(twofas[0].hashedSecret)
+      distributoken.fetch('hashedSecret()', []).should.eventually.amorphEqual(twofas[0].hashedSecret)
     ])
   })
 
@@ -79,13 +92,13 @@ describe('distributoken', () => {
         return distributoken.broadcast('distribute(bytes16,bytes16,bytes4,address,uint256,bytes32)', [
           twofas[index].secret, twofas[index + 1].hashedSecret, twofas[index + 1].checksum,
           receiver.address, values[index], memos[index]
-        ]).getConfirmation()
+        ], {}).getConfirmation()
       }
     }))
   })
 
   it('should have correct hashedSecret', () => {
-    return distributoken.fetch('hashedSecret()').should.eventually.amorphEqual(twofas[receiversCount].hashedSecret)
+    return distributoken.fetch('hashedSecret()', []).should.eventually.amorphEqual(twofas[receiversCount].hashedSecret)
   })
 
   it(`all ${receiversCount} distributions should have correct values`, () => {
@@ -113,11 +126,11 @@ describe('distributoken', () => {
     return distributoken.broadcast('distribute(bytes16,bytes16,bytes4,address[],uint256[],bytes32[])', [
       twofas[receiversCount].secret, twofas[receiversCount + 1].hashedSecret, twofas[receiversCount + 1].checksum,
       _.map(receivers, 'address'), values, memos
-    ]).getConfirmation()
+    ], {}).getConfirmation()
   })
 
   it('should have correct hashedSecret', () => {
-    return distributoken.fetch('hashedSecret()').should.eventually.amorphEqual(twofas[receiversCount + 1].hashedSecret)
+    return distributoken.fetch('hashedSecret()', []).should.eventually.amorphEqual(twofas[receiversCount + 1].hashedSecret)
   })
 
   it(`all ${receiversCount} distributions should have correct values`, () => {
@@ -141,6 +154,90 @@ describe('distributoken', () => {
         return bignumber.times(2)
       }))
     }))
+  })
+
+  describe('StandardToken', () => {
+    describe('transfer', () => {
+      it('should fail when value > balance', () => {
+        distributoken.broadcast('transfer(address,uint256)', [
+          receivers[1].address,
+          values[0].as('bignumber', (bignumber) => {
+            return bignumber.times(3)
+          })
+        ], {
+          from: receivers[0]
+        }).getConfirmation().should.eventually.be.rejectedWith(Error)
+      })
+      it('receivers values should be the same', () => {
+        return Q.all(receivers.map((receiver, index) => {
+          return distributoken.fetch('balanceOf(address)', [receiver.address]).should.eventually.amorphEqual(values[index].as('bignumber', (bignumber) => {
+            return bignumber.times(2)
+          }))
+        }))
+      })
+      it('should succeed', () => {
+        return distributoken.broadcast('transfer(address,uint256)', [
+          receivers[1].address, values[0]
+        ], {
+          from: receivers[0]
+        }).getConfirmation()
+      })
+      it('should have updated balances', () => {
+        return Q.all([
+          distributoken.fetch('balanceOf(address)', [receivers[0].address]).should.eventually.amorphEqual(values[0], 'number'),
+          distributoken.fetch('balanceOf(address)', [receivers[1].address]).should.eventually.amorphEqual(values[1].as('bignumber', (bignumber) => {
+            return bignumber.times(2).plus(values[0].to('bignumber'))
+          }))
+        ])
+      })
+    })
+    describe('transferFrom', () => {
+      it('attempt to transferFrom receivers[1] to receivers[0] from account', () => {
+        return distributoken.broadcast('transferFrom(address,address,uint256)', [
+          receivers[1].address, receivers[0].address, values[0]
+        ], {
+          from: account
+        }).getConfirmation()
+      })
+      it('should NOT have updated balances', () => {
+        return Q.all([
+          distributoken.fetch('balanceOf(address)', [receivers[0].address]).should.eventually.amorphEqual(values[0], 'number'),
+          distributoken.fetch('balanceOf(address)', [receivers[1].address]).should.eventually.amorphEqual(values[1].as('bignumber', (bignumber) => {
+            return bignumber.times(2).plus(values[0].to('bignumber'))
+          }))
+        ])
+      })
+      it('should approve account (as receivers[1])', () => {
+        return distributoken.broadcast('approve(address,uint256)', [
+          account.address, values[0]
+        ], {
+          from: receivers[1]
+        }).getConfirmation()
+      })
+      it('should have updated allowance', () => {
+        return distributoken.fetch('allowance(address,address)', [
+          receivers[1].address, account.address
+        ]).should.eventually.amorphEqual(values[0])
+      })
+      it('account should transferFrom receivers[1] to receivers[0] from account', () => {
+        return distributoken.broadcast('transferFrom(address,address,uint256)', [
+          receivers[1].address, receivers[0].address, values[0]
+        ], {
+          from: account,
+          gas: ultralightbeam.blockPoller.block.gasLimit
+        }).getConfirmation()
+      })
+      it('should have updated balances', () => {
+        return Q.all([
+          distributoken.fetch('balanceOf(address)', [receivers[0].address]).should.eventually.amorphEqual(values[0].as('bignumber', (bignumber) => {
+            return bignumber.times(2)
+          })),
+          distributoken.fetch('balanceOf(address)', [receivers[1].address]).should.eventually.amorphEqual(values[1].as('bignumber', (bignumber) => {
+            return bignumber.times(2)
+          }))
+        ])
+      })
+    })
   })
 
 })

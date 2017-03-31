@@ -31,7 +31,8 @@
     "promise-waterfall": "^0.1.0",
     "q": "^1.4.1",
     "random-amorph": "0.0.1",
-    "solc": "^0.4.10"
+    "solc": "^0.4.10",
+    "ultralightbeam": "^0.22.0"
   },
   "dependencies": {
     "amorph-base2048": "0.0.1",
@@ -48,7 +49,7 @@
     "promise-waterfall": "^0.1.0",
     "prompt": "^1.0.0",
     "solc": "^0.4.10",
-    "ultralightbeam": "^0.18.5",
+    "ultralightbeam": "^0.22.0",
     "web3": "^0.16.0"
   }
 }
