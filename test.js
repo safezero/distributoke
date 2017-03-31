@@ -2,6 +2,7 @@ const Ultralightbeam = require('ultralightbeam')
 const TestRPC = require('ethereumjs-testrpc')
 const Account = require('ethereum-account-amorph')
 const SolDeployTransactionRequest = require('ultralightbeam/lib/SolDeployTransactionRequest')
+const TransactionRequest = require('ultralightbeam/lib/TransactionRequest')
 const SolWrapper = require('ultralightbeam/lib/SolWrapper')
 const _ = require('lodash')
 const fs = require('fs')
@@ -17,12 +18,14 @@ const waterfall = require('promise-waterfall')
 const Twofa = require('eth-twofa')
 const distributokenInfo = require('./lib/info')
 const OOGError = require('ultralightbeam/lib/errors/OOG')
+const InvalidFunctionSignatureError = require('ultralightbeam/lib/errors/InvalidFunctionSignature')
 
 chai.use(chaiAmorph)
 chai.use(chaiAsPromised)
 chai.should()
 
-const account = Account.generate()
+const owner = Account.generate()
+const newOwner = Account.generate()
 
 const initialSupply = new Amorph(0, 'number')
 const name = new Amorph('THANKS', 'ascii')
@@ -38,21 +41,24 @@ const twofas = _.range(receiversCount * 2 + 1).map(() => { return Twofa.generate
 const provider = TestRPC.provider({
   gasLimit: 4000000,
   blocktime: 2,
-  accounts: receivers.map((receiver) => {
+  accounts: [{
+    balance: 1000000000000000000,
+    secretKey: owner.privateKey.to('hex.prefixed')
+  }, {
+    balance: 1000000000000000000,
+    secretKey: newOwner.privateKey.to('hex.prefixed')
+  }].concat(receivers.map((receiver) => {
     return {
       balance: 1000000000000000000,
       secretKey: receiver.privateKey.to('hex.prefixed')
     }
-  }).concat([{
-    balance: 1000000000000000000,
-    secretKey: account.privateKey.to('hex.prefixed')
-  }]),
+  })),
   locked: false
 })
 
 const ultralightbeam = new Ultralightbeam(provider, {
   maxBlocksToWait: 10,
-  defaultAccount: account,
+  defaultAccount: owner,
   gasMultiplier: 1.5
 })
 
@@ -76,14 +82,35 @@ describe('distributoken', () => {
 
   it('should have correct values', () => {
     return Q.all([
-      distributoken.fetch('owner()', []).should.eventually.amorphEqual(account.address),
+      distributoken.fetch('owner()', []).should.eventually.amorphEqual(owner.address),
       distributoken.fetch('totalSupply()', []).should.eventually.amorphEqual(initialSupply),
       distributoken.fetch('name()', []).should.eventually.amorphEqual(name),
       distributoken.fetch('decimals()', []).should.eventually.amorphEqual(decimals),
       distributoken.fetch('symbol()', []).should.eventually.amorphEqual(symbol),
-      distributoken.fetch('balanceOf(address)', [account.address]).should.eventually.amorphEqual(initialSupply),
+      distributoken.fetch('balanceOf(address)', [owner.address]).should.eventually.amorphEqual(initialSupply),
       distributoken.fetch('hashedSecret()', []).should.eventually.amorphEqual(twofas[0].hashedSecret)
     ])
+  })
+
+  it('should NOT be able to call _distribute', () => {
+    (() => {
+      distributoken.broadcast('_distribute(address,uint256,bytes32)', [
+        owner.address, new Amorph(1, 'number'), new Amorph('hello', 'ascii')
+      ], {})
+    }).should.throw(InvalidFunctionSignatureError)
+  })
+
+  it(`should NOT be able to distribute from non-owner`, () => {
+    return waterfall(receivers.map((receiver, index) => {
+      return () => {
+        return distributoken.broadcast('distribute(bytes16,bytes16,bytes4,address,uint256,bytes32)', [
+          twofas[index].secret, twofas[index + 1].hashedSecret, twofas[index + 1].checksum,
+          receiver.address, values[index], memos[index]
+        ], {
+          from: receiver
+        }).getConfirmation().should.be.rejectedWith(Error)
+      }
+    }))
   })
 
   it(`make ${receiversCount} distributions`, () => {
@@ -156,6 +183,26 @@ describe('distributoken', () => {
     }))
   })
 
+  it(`should be NOT able to change the owner from non-owner`, () => {
+    return distributoken.broadcast('setOwner(bytes16,bytes16,bytes4,address)', [
+      twofas[receiversCount + 1].secret, twofas[receiversCount + 2].hashedSecret, twofas[receiversCount + 2].checksum,
+      newOwner.address
+    ], {
+      from: newOwner
+    }).getConfirmation().should.be.rejectedWith(Error)
+  })
+
+  it(`should be able to change the owner`, () => {
+    return distributoken.broadcast('setOwner(bytes16,bytes16,bytes4,address)', [
+      twofas[receiversCount + 1].secret, twofas[receiversCount + 2].hashedSecret, twofas[receiversCount + 2].checksum,
+      newOwner.address
+    ], {}).getConfirmation()
+  })
+
+  it(`should have updated owner`, () => {
+    return distributoken.fetch('owner()', []).should.eventually.amorphEqual(newOwner.address)
+  })
+
   describe('StandardToken', () => {
     describe('transfer', () => {
       it('should fail when value > balance', () => {
@@ -192,11 +239,11 @@ describe('distributoken', () => {
       })
     })
     describe('transferFrom', () => {
-      it('attempt to transferFrom receivers[1] to receivers[0] from account', () => {
+      it('attempt to transferFrom receivers[1] to receivers[0] from owner', () => {
         return distributoken.broadcast('transferFrom(address,address,uint256)', [
           receivers[1].address, receivers[0].address, values[0]
         ], {
-          from: account
+          from: owner
         }).getConfirmation()
       })
       it('should NOT have updated balances', () => {
@@ -207,23 +254,23 @@ describe('distributoken', () => {
           }))
         ])
       })
-      it('should approve account (as receivers[1])', () => {
+      it('should approve owner (as receivers[1])', () => {
         return distributoken.broadcast('approve(address,uint256)', [
-          account.address, values[0]
+          owner.address, values[0]
         ], {
           from: receivers[1]
         }).getConfirmation()
       })
       it('should have updated allowance', () => {
         return distributoken.fetch('allowance(address,address)', [
-          receivers[1].address, account.address
+          receivers[1].address, owner.address
         ]).should.eventually.amorphEqual(values[0])
       })
-      it('account should transferFrom receivers[1] to receivers[0] from account', () => {
+      it('owner should transferFrom receivers[1] to receivers[0] from owner', () => {
         return distributoken.broadcast('transferFrom(address,address,uint256)', [
           receivers[1].address, receivers[0].address, values[0]
         ], {
-          from: account,
+          from: owner,
           gas: ultralightbeam.blockPoller.block.gasLimit
         }).getConfirmation()
       })
@@ -237,6 +284,14 @@ describe('distributoken', () => {
           }))
         ])
       })
+    })
+  })
+  describe('HumanStandardToken', () => {
+    it('fallback should throw an error', () => {
+      return new TransactionRequest(ultralightbeam, {
+        to: distributoken.address,
+        value: new Amorph(1, 'number')
+      }).send().getConfirmation().should.eventually.be.rejectedWith(Error)
     })
   })
 
